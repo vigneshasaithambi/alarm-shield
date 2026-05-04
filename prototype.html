@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Alarm Shield — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="app/tokens.css"/>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  body { background: radial-gradient(ellipse at top, #FFEFE0 0%, #FFD9B8 60%, #FFC299 100%); }
+  .stage { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px; }
+  .scale-wrap { transform-origin: center; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="app/data.jsx"></script>
+<script type="text/babel" src="app/components.jsx"></script>
+<script type="text/babel" src="app/screens-onboarding.jsx"></script>
+<script type="text/babel" src="app/screens-main.jsx"></script>
+<script type="text/babel" src="app/screens-wake.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useRef } = React;
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(window.TWEAK_DEFAULTS);
+  const [scene, setScene] = useState("splash");
+  const [tab, setTab] = useState("alarms");
+  const [editingAlarm, setEditingAlarm] = useState(null);
+  const [alarms, setAlarms] = useState(window.DEFAULT_ALARMS);
+  const [activeMission, setActiveMission] = useState(null);
+  const [intention, setIntention] = useState("finish the deck");
+  const [paywall, setPaywall] = useState(null); // feature name or null
+  const [studentVerify, setStudentVerify] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const toastRef = useRef(null);
+
+  // Auto-scale to fit viewport
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const compute = () => {
+      const w = window.innerWidth - 80;
+      const h = window.innerHeight - 80;
+      const s = Math.min(w / 393, h / 920, 1);
+      setScale(s);
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, []);
+
+  const goWake = () => {
+    // Fallback alarm shape so demo wake works even when alarms is empty
+    // (e.g. immediately after switching to a fresh first-time user).
+    const fallback = { id: "demo", time: "06:30", ampm: "AM", days: ["M","T","W","T","F"], mission: "Photo", missionIcon: "camera", enabled: true, shield: 30 };
+    setActiveMission(alarms[0] || fallback);
+    setScene("wake");
+  };
+
+  const saveAlarm = (a) => {
+    setAlarms(prev => {
+      const idx = prev.findIndex(x => x.id === a.id);
+      if (idx >= 0) { const c = [...prev]; c[idx] = a; return c; }
+      return [...prev, a];
+    });
+    setEditingAlarm(null);
+  };
+
+  // Demo control panel — switch between first-time and returning user journeys.
+  // Independent of the Plan toggle (isPremium) which is also wired through the panel.
+  const isFirstTime = scene === "splash" || scene === "onboarding";
+  const handleSetUserType = (toFirst) => {
+    setPaywall(null);
+    setStudentVerify(false);
+    setShareOpen(false);
+    setEditingAlarm(null);
+    setActiveMission(null);
+    setTab("alarms");
+    setTweak("streakState", "active");
+    if (toFirst) {
+      setAlarms([]);
+      setIntention("");
+      setTweak("streakDays", 0);
+      setScene("splash");
+    } else {
+      setAlarms(window.DEFAULT_ALARMS);
+      setIntention("finish the deck");
+      setTweak("streakDays", 47);
+      setScene("home");
+    }
+  };
+
+  const sceneNode = (() => {
+    if (scene === "splash") return <SplashScreen onDone={() => setScene("onboarding")}/>;
+    if (scene === "onboarding") return <Onboarding onDone={(data) => {
+      // Consume the alarm time + intention the user picked during onboarding so
+      // the first-time experience is believable end-to-end.
+      if (data?.alarmTime) {
+        const a = data.alarmTime;
+        const newAlarm = {
+          id: `a${Date.now()}`,
+          time: `${String(a.h).padStart(2,'0')}:${String(a.m).padStart(2,'0')}`,
+          ampm: a.ampm,
+          days: ["M","T","W","T","F"],
+          mission: data.mission || "Photo",
+          missionIcon: data.mission === "Math" ? "calc" : "camera",
+          enabled: true,
+          shield: 30,
+        };
+        // Only seed if alarms have been wiped (first-time path) — don't overwrite a returning user's alarms.
+        setAlarms(prev => prev.length === 0 ? [newAlarm] : prev);
+      }
+      if (data?.why) setIntention(data.why);
+      setScene("home");
+    }}/>;
+    if (scene === "alarmSetup") return <AlarmSetup alarm={editingAlarm} onBack={() => setScene("home")} onSave={(a) => { saveAlarm(a); setScene("home"); }} onTriggerPaywall={(n) => setPaywall(n)}/>;
+    if (scene === "upi") return <UpiSetup onBack={() => setScene("home")} onActivate={() => setScene("home")} onTriggerPaywall={(n) => setPaywall(n)}/>;
+    if (scene === "wake") return <WakeMoment alarm={activeMission || alarms[0]} intention={intention} onStartMission={() => setScene("mission")} onSnooze={() => setScene("home")}/>;
+    if (scene === "mission") {
+      const m = (activeMission?.mission) || "Photo";
+      const onComplete = () => setScene("success");
+      const onBack = () => setScene("wake");
+      if (m === "Photo") return <PhotoMission onComplete={onComplete} onBack={onBack}/>;
+      if (m === "Math") return <MathMission onComplete={onComplete} onBack={onBack}/>;
+      if (m === "Shake") return <ShakeMission onComplete={onComplete} onBack={onBack}/>;
+      if (m === "Step") return <StepMission onComplete={onComplete} onBack={onBack}/>;
+      return <PhotoMission onComplete={onComplete} onBack={onBack}/>;
+    }
+    if (scene === "success") return <StreakSuccess tweaks={tweaks} onContinue={() => setScene("shield")} onShare={() => setShareOpen(true)} onSetIntention={setIntention}/>;
+    if (scene === "shield") return <PhoneShield tweaks={tweaks} onWindDown={() => setScene("home")} onEmergency={() => setScene("home")} onComplete={() => setScene("home")}/>;
+    // Home: tabs
+    if (tab === "alarms") return <HomeScreen tweaks={tweaks} alarms={alarms} intention={intention}
+      onAddAlarm={() => { setEditingAlarm(null); setScene("alarmSetup"); }}
+      onEditAlarm={(a) => { setEditingAlarm(a); setScene("alarmSetup"); }}
+      onTriggerWake={goWake}
+      onOpenSettings={() => setTab("you")}/>;
+    if (tab === "streak") return <StreakTab tweaks={tweaks} onTriggerPaywall={(n) => setPaywall(n)}/>;
+    if (tab === "you") return <YouTab tweaks={tweaks} onTriggerPaywall={(n) => setPaywall(n)} onOpenUpi={() => setScene("upi")} onUpgrade={() => setPaywall(null) || setPaywall("AI Morning Brief")}/>;
+    return null;
+  })();
+
+  const showTabs = scene === "home" || (!["splash","onboarding","alarmSetup","upi","wake","mission","success","shield"].includes(scene));
+
+  return (
+    <ToastProvider>
+      <div className="stage">
+        <div className="scale-wrap" style={{ transform: `scale(${scale})` }}>
+          <Phone>
+            {sceneNode}
+            {showTabs && <TabBar active={tab} onChange={setTab}/>}
+            <Paywall open={!!paywall} triggerFeatureName={paywall} onClose={() => setPaywall(null)} onSuccess={() => setTweak("isPremium", true)} onStudent={() => { setPaywall(null); setStudentVerify(true); }}/>
+            <StudentVerify open={studentVerify} onClose={() => setStudentVerify(false)} onVerified={() => setTweak("isPremium", true)}/>
+            {shareOpen && <ShareCard tweaks={tweaks} onClose={() => setShareOpen(false)}/>}
+          </Phone>
+        </div>
+      </div>
+
+      {/* Journey control panel — visible demo controls, always on */}
+      <JourneyPanel
+        isFirstTime={isFirstTime}
+        onChangeUserType={handleSetUserType}
+        isPremium={tweaks.isPremium}
+        onChangePlan={(v) => setTweak("isPremium", v)}
+        onJumpWake={goWake}
+        onJumpSuccess={() => setScene("success")}
+        onJumpShield={() => setScene("shield")}
+        onJumpPaywall={() => setPaywall("AI Morning Brief")}
+      />
+
+      {/* Tweaks panel */}
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="User">
+          <TweakToggle label="Premium" value={tweaks.isPremium} onChange={(v) => setTweak("isPremium", v)} hint="Unlocks gold rows + premium missions"/>
+        </TweakSection>
+        <TweakSection title="Streak">
+          <TweakRadio label="State" value={tweaks.streakState} onChange={(v) => setTweak("streakState", v)}
+            options={[{label:"Active", value:"active"},{label:"Broken", value:"broken"},{label:"Recovery", value:"recovery"}]}/>
+          <TweakSelect label="Days" value={tweaks.streakDays} onChange={(v) => setTweak("streakDays", parseInt(v))}
+            options={[{label:"0", value:0},{label:"6", value:6},{label:"23", value:23},{label:"47", value:47},{label:"90", value:90},{label:"365", value:365}]}/>
+        </TweakSection>
+        <TweakSection title="Wake">
+          <TweakSlider label="Min until next alarm" value={tweaks.nextAlarmMinutes} onChange={(v) => setTweak("nextAlarmMinutes", v)} min={1} max={1440} step={1}/>
+        </TweakSection>
+        <TweakSection title="Demo jumps">
+          <TweakButton label="Jump to wake moment" onClick={goWake}/>
+          <TweakButton label="Jump to streak success" onClick={() => setScene("success")}/>
+          <TweakButton label="Jump to phone shield" onClick={() => setScene("shield")}/>
+          <TweakButton label="Open paywall" onClick={() => setPaywall("AI Morning Brief")}/>
+          <TweakButton label="Restart onboarding" onClick={() => setScene("splash")}/>
+        </TweakSection>
+      </TweaksPanel>
+    </ToastProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="100%" r="100%">
+      <stop offset="0%" stop-color="#F89366"/>
+      <stop offset="60%" stop-color="#1A1830"/>
+      <stop offset="100%" stop-color="#0F0E1A"/>
+    </radialGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#bg)"/>
+  <path d="M50 25 L 35 32 V 50 C 35 60 41 67 50 70 C 59 67 65 60 65 50 V 32 Z" fill="none" stroke="#F89366" stroke-width="2.5" stroke-linejoin="round"/>
+</svg>
+</template>
+</body>
+</html>

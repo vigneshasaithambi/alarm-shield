@@ -1,0 +1,180 @@
+/* Alarm Shield — Design Tokens (LIGHT / SUNRISE) */
+:root {
+  /* Surfaces — warm peachy cream */
+  --ink: #FFF7EE;            /* page bg (was deep navy) */
+  --ink-soft: #FFEFE0;       /* card bg */
+  --ink-elevated: #FFE5CE;   /* elevated card / chip */
+  --ink-line: #F5D9C0;       /* hairlines */
+
+  /* Sunrise accent (unchanged hue, warmer ramp) */
+  --sunrise-50: #FFE8DC;
+  --sunrise-200: #FCC9A8;
+  --sunrise-500: #EE7A48;
+  --sunrise-700: #D26536;
+  --sunrise-900: #7A2E0E;
+
+  /* Joyful secondary accents */
+  --coral:    #FF6B6B;
+  --apricot:  #FFB088;
+  --lemon:    #FFD66E;
+  --mint:     #6FD6A6;
+  --sky:      #7CC4E8;
+  --lavender: #B8A5E8;
+
+  /* Cream neutrals */
+  --cream: #2A1810;          /* aliased — was light, now dark text for compat */
+  --cream-soft: #FFF3E5;
+  --cream-true: #FFFBF5;     /* actual cream surface, for cases that need it */
+
+  /* Text — dark on light */
+  --text-primary: #2A1810;
+  --text-secondary: #6B5448;
+  --text-on-dark: #2A1810;       /* aliased for compat — actually dark on light */
+  --text-on-dark-soft: #8A7263;  /* aliased for compat */
+
+  /* Semantic — slightly punchier on light */
+  --success: #2FAE6E;
+  --warning: #E59A2A;
+  --danger:  #E25656;
+  --info:    #4F86C9;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows — soft on light */
+  --shadow-sm: 0 1px 2px rgba(80,40,20,0.06);
+  --shadow-md: 0 4px 16px rgba(80,40,20,0.08);
+  --shadow-lg: 0 16px 40px rgba(80,40,20,0.12);
+  --shadow-glow-sunrise: 0 0 28px rgba(238, 122, 72, 0.35);
+
+  /* Type */
+  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-display: "Fraunces", "Inter", serif;
+
+  /* Motion */
+  --ease-overshoot: cubic-bezier(0.2, 0, 0.13, 1.5);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-page: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background: #FFE5CE;
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+body {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tabular numerals everywhere a number can animate or count */
+.tnum { font-variant-numeric: tabular-nums; }
+
+button { font-family: inherit; }
+
+/* Type scale (per PRD §3.2) */
+.t-display-2xl { font-family: var(--font-display); font-size: 56px; line-height: 60px; font-weight: 400; letter-spacing: -0.02em; font-variation-settings: "opsz" 144; }
+.t-display-xl  { font-family: var(--font-display); font-size: 44px; line-height: 48px; font-weight: 400; letter-spacing: -0.02em; font-variation-settings: "opsz" 144; }
+.t-display-lg  { font-family: var(--font-display); font-size: 36px; line-height: 40px; font-weight: 400; letter-spacing: -0.02em; font-variation-settings: "opsz" 144; }
+.t-heading-lg  { font-family: var(--font-display); font-size: 28px; line-height: 34px; font-weight: 400; letter-spacing: -0.015em; font-variation-settings: "opsz" 96; }
+.t-heading-md  { font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -0.01em; }
+.t-heading-sm  { font-size: 18px; line-height: 24px; font-weight: 600; letter-spacing: -0.005em; }
+.t-body-lg     { font-size: 17px; line-height: 24px; font-weight: 400; }
+.t-body-md     { font-size: 15px; line-height: 22px; font-weight: 400; }
+.t-body-sm     { font-size: 13px; line-height: 18px; font-weight: 400; }
+.t-label-md    { font-size: 14px; line-height: 18px; font-weight: 500; letter-spacing: 0.02em; }
+.t-label-sm    { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Premium card surface — layered gradient + inset highlight */
+.card-premium {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 30%),
+    linear-gradient(180deg, var(--cream-true) 0%, var(--ink-soft) 100%);
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.9) inset,
+    0 -1px 0 rgba(245,217,192,0.5) inset,
+    0 4px 16px rgba(80,40,20,0.08),
+    0 1px 3px rgba(80,40,20,0.05);
+  border-radius: var(--radius-lg);
+}
+
+.card-sunrise {
+  background:
+    radial-gradient(ellipse 100% 80% at 50% 0%, rgba(255,255,255,0.5) 0%, transparent 60%),
+    linear-gradient(160deg, #FFD66E 0%, #FFB088 50%, #EE7A48 100%);
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.9) inset,
+    0 12px 32px rgba(238,122,72,0.25),
+    0 4px 12px rgba(238,122,72,0.15);
+  color: #2A1810;
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+.card-sunrise::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at 80% 110%, rgba(255,255,255,0.5) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+/* Subtle grain for depth */
+.grain { position: relative; }
+.grain::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.4;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.3  0 0 0 0 0.2  0 0 0 0.045 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+  mix-blend-mode: multiply;
+}
+
+/* Dark-mode default */
+.app-surface {
+  background: var(--ink);
+  color: var(--text-on-dark);
+}
+
+/* Scroll inside scenes
+ * min-height: 0 is critical — a flex child with overflow:auto only clips and
+ * scrolls when its min-height is overridden from the default `auto`, which
+ * otherwise lets the element grow to fit its content and never overflow. */
+.scene-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  height: 100%;
+  min-height: 0;
+}
+.scene-scroll::-webkit-scrollbar { width: 0; height: 0; }
+
+/* Tap targets */
+button, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Page transitions */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes ringPulse { 0%, 100% { opacity: 0.95; } 50% { opacity: 1; } }
+@keyframes glowPulse { 0%, 100% { filter: drop-shadow(0 0 12px rgba(238,122,72,0.3)); } 50% { filter: drop-shadow(0 0 28px rgba(238,122,72,0.6)); } }
+@keyframes sunRays { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
